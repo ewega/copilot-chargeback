@@ -57,7 +57,9 @@ jobs:
         id: test-action
         uses: ./
         with:
-          milliseconds: 1000
+          github_organization: 'test-org'
+          github_team: 'test-team'
+          github_cost_center_name: 'test-cost-center'
 
       - name: Print Output
         id: output
