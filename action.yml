@@ -4,15 +4,20 @@ author: 'Your name or organization here'
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: 'Your input description here'
+  github_organization:
+    description: 'GitHub organization name'
     required: true
-    default: '1000'
+  github_team:
+    description: 'GitHub team name (optional)'
+    required: false
+  github_cost_center_name:
+    description: 'GitHub Cost Center Name'
+    required: true
 
 # Define your outputs here.
 outputs:
-  time:
-    description: 'Your output description here'
+  result:
+    description: 'Result of the action'
 
 runs:
   using: node20
