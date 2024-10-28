@@ -97,8 +97,7 @@ describe('action', () => {
 
     // Verify that all of the core library functions were called correctly
     expect(setFailedMock).toHaveBeenNthCalledWith(
-      1,
-      'API error'
+      1, 'API error'
     )
   })
 
