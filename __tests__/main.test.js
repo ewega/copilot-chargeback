@@ -96,9 +96,7 @@ describe('action', () => {
     await main.run()
 
     // Verify that all of the core library functions were called correctly
-    expect(setFailedMock).toHaveBeenNthCalledWith(
-      1, 'API error'
-    )
+    expect(setFailedMock).toHaveBeenNthCalledWith(1, 'API error')
   })
 
   it('fails if no input is provided', async () => {
@@ -106,7 +104,9 @@ describe('action', () => {
     getInputMock.mockImplementation(name => {
       switch (name) {
         case 'github_organization':
-          throw new Error('Input required and not supplied: github_organization')
+          throw new Error(
+            'Input required and not supplied: github_organization'
+          )
         default:
           return ''
       }
