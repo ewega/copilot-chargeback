@@ -2,6 +2,8 @@
  * Unit tests for the action's main functionality, src/main.js
  */
 const core = require('@actions/core')
+const github = require('@actions/github')
+const axios = require('axios')
 const main = require('../src/main')
 
 // Mock the GitHub Actions core library
@@ -10,8 +12,22 @@ const getInputMock = jest.spyOn(core, 'getInput').mockImplementation()
 const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
 const setOutputMock = jest.spyOn(core, 'setOutput').mockImplementation()
 
-// Mock the action's main function
-const runMock = jest.spyOn(main, 'run')
+// Mock the GitHub API
+jest.mock('@actions/github', () => ({
+  getOctokit: jest.fn().mockReturnValue({
+    rest: {
+      teams: {
+        listMembersInOrg: jest.fn().mockResolvedValue({ data: [] })
+      },
+      orgs: {
+        listMembers: jest.fn().mockResolvedValue({ data: [] })
+      }
+    }
+  })
+}))
+
+// Mock the GitHub Cost Center API
+jest.mock('axios')
 
 // Other utilities
 const timeRegex = /^\d{2}:\d{2}:\d{2}/
@@ -21,34 +37,38 @@ describe('action', () => {
     jest.clearAllMocks()
   })
 
-  it('sets the time output', async () => {
+  it('sets the result output', async () => {
     // Set the action's inputs as return values from core.getInput()
     getInputMock.mockImplementation(name => {
       switch (name) {
-        case 'milliseconds':
-          return '500'
+        case 'github_organization':
+          return 'test-org'
+        case 'github_team':
+          return 'test-team'
+        case 'github_cost_center_name':
+          return 'test-cost-center'
         default:
           return ''
       }
     })
 
+    // Mock GitHub API responses
+    github.getOctokit().rest.teams.listMembersInOrg.mockResolvedValue({
+      data: [{ login: 'user1' }, { login: 'user2' }]
+    })
+    axios.get.mockResolvedValue({
+      data: [{ login: 'user2' }, { login: 'user3' }]
+    })
+    axios.post.mockResolvedValue({})
+    axios.delete.mockResolvedValue({})
+
     await main.run()
-    expect(runMock).toHaveReturned()
 
     // Verify that all of the core library functions were called correctly
-    expect(debugMock).toHaveBeenNthCalledWith(1, 'Waiting 500 milliseconds ...')
-    expect(debugMock).toHaveBeenNthCalledWith(
-      2,
-      expect.stringMatching(timeRegex)
-    )
-    expect(debugMock).toHaveBeenNthCalledWith(
-      3,
-      expect.stringMatching(timeRegex)
-    )
     expect(setOutputMock).toHaveBeenNthCalledWith(
       1,
-      'time',
-      expect.stringMatching(timeRegex)
+      'result',
+      'Added users: user1, Removed users: user3'
     )
   })
 
@@ -56,20 +76,29 @@ describe('action', () => {
     // Set the action's inputs as return values from core.getInput()
     getInputMock.mockImplementation(name => {
       switch (name) {
-        case 'milliseconds':
-          return 'this is not a number'
+        case 'github_organization':
+          return 'test-org'
+        case 'github_team':
+          return 'test-team'
+        case 'github_cost_center_name':
+          return 'test-cost-center'
         default:
           return ''
       }
     })
 
+    // Mock GitHub API responses
+    github.getOctokit().rest.teams.listMembersInOrg.mockResolvedValue({
+      data: [{ login: 'user1' }, { login: 'user2' }]
+    })
+    axios.get.mockRejectedValue(new Error('API error'))
+
     await main.run()
-    expect(runMock).toHaveReturned()
 
     // Verify that all of the core library functions were called correctly
     expect(setFailedMock).toHaveBeenNthCalledWith(
       1,
-      'milliseconds not a number'
+      'API error'
     )
   })
 
@@ -77,20 +106,19 @@ describe('action', () => {
     // Set the action's inputs as return values from core.getInput()
     getInputMock.mockImplementation(name => {
       switch (name) {
-        case 'milliseconds':
-          throw new Error('Input required and not supplied: milliseconds')
+        case 'github_organization':
+          throw new Error('Input required and not supplied: github_organization')
         default:
           return ''
       }
     })
 
     await main.run()
-    expect(runMock).toHaveReturned()
 
     // Verify that all of the core library functions were called correctly
     expect(setFailedMock).toHaveBeenNthCalledWith(
       1,
-      'Input required and not supplied: milliseconds'
+      'Input required and not supplied: github_organization'
     )
   })
 })
