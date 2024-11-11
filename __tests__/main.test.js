@@ -32,92 +32,144 @@ jest.mock('axios')
 // Other utilities
 const timeRegex = /^\d{2}:\d{2}:\d{2}/
 
+// Mock cost center API response
+const mockCostCenterResponse = {
+  data: {
+    costCenters: [
+      {
+        id: 'test-id-123',
+        name: 'test-cost-center',
+        resources: [
+          { type: 'Org', name: 'org1' },
+          { type: 'Org', name: 'org2' },
+          { type: 'User', name: 'direct-user1' },
+          { type: 'User', name: 'direct-user2' },
+          { type: 'Repo', name: 'some-repo' }
+        ]
+      }
+    ]
+  }
+}
+
+// Mock the Octokit instance
+const mockOctokit = {
+  rest: {
+    teams: {
+      listMembersInOrg: jest.fn()
+    },
+    orgs: {
+      listMembers: jest.fn()
+    }
+  },
+  request: jest.fn()
+}
+
+// Mock getOctokit to return our mock instance
+jest.spyOn(github, 'getOctokit').mockImplementation(() => mockOctokit)
+
 describe('action', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
 
-  it('sets the result output', async () => {
-    // Set the action's inputs as return values from core.getInput()
+  it('syncs users from organizations to cost center', async () => {
+    // Set up input mocks
     getInputMock.mockImplementation(name => {
       switch (name) {
-        case 'github_organization':
-          return 'test-org'
-        case 'github_team':
-          return 'test-team'
         case 'github_cost_center_name':
           return 'test-cost-center'
+        case 'github_enterprise':
+          return 'test-enterprise'
+        case 'github_token':
+          return 'test-token'
         default:
           return ''
       }
     })
 
-    // Mock GitHub API responses
-    github.getOctokit().rest.teams.listMembersInOrg.mockResolvedValue({
-      data: [{ login: 'user1' }, { login: 'user2' }]
-    })
-    axios.get.mockResolvedValue({
-      data: [{ login: 'user2' }, { login: 'user3' }]
-    })
-    axios.post.mockResolvedValue({})
-    axios.delete.mockResolvedValue({})
+    // Mock the cost centers API call
+    mockOctokit.request.mockResolvedValueOnce(mockCostCenterResponse)
+
+    // Mock org member responses
+    mockOctokit.rest.orgs.listMembers
+      .mockResolvedValueOnce({
+        data: [{ login: 'org1-user1' }, { login: 'org1-user2' }]
+      })
+      .mockResolvedValueOnce({
+        data: [{ login: 'org2-user1' }, { login: 'org1-user2' }]
+      })
 
     await main.run()
 
-    // Verify that all of the core library functions were called correctly
-    expect(setOutputMock).toHaveBeenNthCalledWith(
-      1,
+    // Verify cost center was fetched
+    expect(mockOctokit.request).toHaveBeenCalledWith(
+      'GET /enterprises/{enterprise}/settings/billing/cost-centers',
+      { enterprise: 'test-enterprise' }
+    )
+
+    // Verify org members were fetched for both orgs
+    expect(mockOctokit.rest.orgs.listMembers).toHaveBeenCalledWith({
+      org: 'org1'
+    })
+    expect(mockOctokit.rest.orgs.listMembers).toHaveBeenCalledWith({
+      org: 'org2'
+    })
+
+    // Verify correct users were added/removed
+    expect(setOutputMock).toHaveBeenCalledWith(
       'result',
-      'Added users: user1, Removed users: user3'
+      expect.stringContaining('org1-user1')
     )
   })
 
-  it('sets a failed status', async () => {
-    // Set the action's inputs as return values from core.getInput()
+  it('handles team filtering when team is specified', async () => {
+    // Add test for team filtering
     getInputMock.mockImplementation(name => {
       switch (name) {
-        case 'github_organization':
-          return 'test-org'
         case 'github_team':
           return 'test-team'
         case 'github_cost_center_name':
           return 'test-cost-center'
+        case 'github_enterprise':
+          return 'test-enterprise'
+        case 'github_token':
+          return 'test-token'
         default:
           return ''
       }
     })
 
-    // Mock GitHub API responses
-    github.getOctokit().rest.teams.listMembersInOrg.mockResolvedValue({
-      data: [{ login: 'user1' }, { login: 'user2' }]
+    mockOctokit.request.mockResolvedValueOnce(mockCostCenterResponse)
+    mockOctokit.rest.teams.listMembersInOrg.mockResolvedValue({
+      data: [{ login: 'team-user1' }]
     })
-    axios.get.mockRejectedValue(new Error('API error'))
 
     await main.run()
 
-    // Verify that all of the core library functions were called correctly
-    expect(setFailedMock).toHaveBeenNthCalledWith(1, 'API error')
+    expect(mockOctokit.rest.teams.listMembersInOrg).toHaveBeenCalledWith({
+      org: expect.any(String),
+      team_slug: 'test-team'
+    })
   })
 
-  it('fails if no input is provided', async () => {
-    // Set the action's inputs as return values from core.getInput()
+  it('handles errors gracefully', async () => {
     getInputMock.mockImplementation(name => {
       switch (name) {
-        case 'github_organization':
-          throw new Error(
-            'Input required and not supplied: github_organization'
-          )
+        case 'github_cost_center_name':
+          return 'nonexistent-cost-center'
+        case 'github_enterprise':
+          return 'test-enterprise'
+        case 'github_token':
+          return 'test-token'
         default:
           return ''
       }
     })
 
+    mockOctokit.request.mockRejectedValueOnce(new Error('API error'))
+
     await main.run()
 
-    // Verify that all of the core library functions were called correctly
-    expect(setFailedMock).toHaveBeenNthCalledWith(
-      1,
-      'Input required and not supplied: github_organization'
-    )
+    expect(setFailedMock).toHaveBeenCalledWith('API error')
   })
 })

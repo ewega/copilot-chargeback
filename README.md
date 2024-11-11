@@ -34,3 +34,50 @@ hash.
 ```yaml
 
 ```
+
+## Testing
+
+### Unit Tests
+
+The action includes Jest unit tests. To run the tests:
+
+Unit tests cover:
+
+- Syncing users from organizations to cost centers
+- Team-based filtering
+- Error handling
+- API response parsing
+
+### Local Testing with Debug Logs
+
+To test the action locally with debug logging:
+
+1. Set up a `.env` file with required inputs.
+2. Run the action locally using `@vercel/ncc`.
+3. npx local-action . src/main.js .env
+
+Debug logs will show:
+
+- Cost center retrieval and parsing
+- Organization member fetching
+- Team member fetching (if team specified)
+- User synchronization operations
+
+### Common Issues
+
+**Authentication Errors:**
+
+- Ensure your GitHub token has the following permissions:
+  - `admin:org` to read organization members
+  - `admin:enterprise` to manage cost centers
+
+**Cost Center Not Found:**
+
+- Verify the cost center name matches exactly (case-sensitive).
+
+**Organization Access:**
+
+- Token must have access to all organizations in the cost center.
+
+For more detailed troubleshooting, set `ACTIONS_STEP_DEBUG=true` in your
+environment or workflow.
