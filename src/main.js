@@ -1,6 +1,14 @@
 const core = require('@actions/core')
 const github = require('@actions/github')
 
+const isDev = () => process.env.DEBUG === 'true'
+
+const debug = (...args) => {
+  if (isDev()) {
+    console.log('[DEBUG]', ...args)
+  }
+}
+
 /**
  * The main function for the action.
  * @returns {Promise<void>} Resolves when the action is complete.
@@ -37,13 +45,11 @@ async function run() {
       user => !github_users.includes(user)
     )
 
-    console.log(`[DEBUG] Users to add: ${users_to_add.join(', ')}`)
-    console.log(`[DEBUG] Users to remove: ${users_to_remove.join(', ')}`)
+    debug(`Users to add: ${users_to_add.join(', ')}`)
+    debug(`Users to remove: ${users_to_remove.join(', ')}`)
 
     for (const user of users_to_add) {
-      console.log(
-        `[DEBUG] Adding user: ${user} to cost center: ${cost_center_id}`
-      )
+      debug(`Adding user: ${user} to cost center: ${cost_center_id}`)
       await octokit.request(
         'POST /enterprises/{enterprise}/settings/billing/cost-centers/{cost_center_id}/resource',
         {
@@ -55,9 +61,7 @@ async function run() {
     }
 
     for (const user of users_to_remove) {
-      console.log(
-        `[DEBUG] Removing user: ${user} from cost center: ${cost_center_id}`
-      )
+      debug(`Removing user: ${user} from cost center: ${cost_center_id}`)
       await octokit.request(
         'DELETE /enterprises/{enterprise}/settings/billing/cost-centers/{cost_center_id}/resource',
         {
@@ -88,9 +92,7 @@ const getOrganizationUsers = async (
 
   for (const org of organizations) {
     if (team_name) {
-      console.log(
-        `[DEBUG] Fetching team members for team: ${team_name} in org: ${org}`
-      )
+      debug(`Fetching team members for team: ${team_name} in org: ${org}`)
       try {
         const { data: team_members } =
           await octokit.rest.teams.listMembersInOrg({
@@ -106,7 +108,7 @@ const getOrganizationUsers = async (
         )
       }
     } else {
-      console.log(`[DEBUG] Fetching organization members for org: ${org}`)
+      debug(`Fetching organization members for org: ${org}`)
       try {
         const { data: org_members } = await octokit.rest.orgs.listMembers({
           org
@@ -122,15 +124,15 @@ const getOrganizationUsers = async (
     }
   }
 
-  console.log(
-    `[DEBUG] Retrieved ${all_users.size} unique users from ${organizations.length} organizations`
+  debug(
+    `Retrieved ${all_users.size} unique users from ${organizations.length} organizations`
   )
   return Array.from(all_users)
 }
 
 const getCostCenter = async (octokit, github_enterprise, cost_center_name) => {
-  console.log(
-    `[DEBUG] Getting cost center details for name: ${cost_center_name} in enterprise: ${github_enterprise}`
+  debug(
+    `Getting cost center details for name: ${cost_center_name} in enterprise: ${github_enterprise}`
   )
   const start_time = Date.now()
 
@@ -165,8 +167,8 @@ const getCostCenter = async (octokit, github_enterprise, cost_center_name) => {
     const user_names = user_resources.map(user => user.name)
 
     const execution_time = Date.now() - start_time
-    console.log(
-      `[DEBUG] Found cost center ID: ${cost_center.id} with ${organization_names.length} organizations and ${user_names.length} direct users (took ${execution_time}ms)`
+    debug(
+      `Found cost center ID: ${cost_center.id} with ${organization_names.length} organizations and ${user_names.length} direct users (took ${execution_time}ms)`
     )
 
     return [cost_center.id, user_names, organization_names]
