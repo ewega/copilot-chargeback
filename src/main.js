@@ -86,26 +86,35 @@ async function run() {
 const getOrganizationUsers = async (
   octokit,
   organizations,
-  team_name = null
+  team_input = null
 ) => {
   const all_users = new Set()
 
+  const team_configs = team_input ? JSON.parse(team_input) : null
+
   for (const org of organizations) {
-    if (team_name) {
-      debug(`Fetching team members for team: ${team_name} in org: ${org}`)
-      try {
-        const { data: team_members } =
-          await octokit.rest.teams.listMembersInOrg({
-            org,
-            team_slug: team_name
-          })
-        for (const member of team_members) {
-          all_users.add(member.login)
+    if (team_configs) {
+      const org_teams = team_configs.filter(config => config.org === org)
+      if (org_teams.length > 0) {
+        for (const team_config of org_teams) {
+          debug(
+            `Fetching team members for team: ${team_config.team} in org: ${org}`
+          )
+          try {
+            const { data: team_members } =
+              await octokit.rest.teams.listMembersInOrg({
+                org,
+                team_slug: team_config.team
+              })
+            for (const member of team_members) {
+              all_users.add(member.login)
+            }
+          } catch (error) {
+            console.warn(
+              `[WARN] Could not fetch team ${team_config.team} from org ${org}: ${error.message}`
+            )
+          }
         }
-      } catch (error) {
-        console.warn(
-          `[WARN] Could not fetch team ${team_name} from org ${org}: ${error.message}`
-        )
       }
     } else {
       debug(`Fetching organization members for org: ${org}`)
@@ -125,7 +134,7 @@ const getOrganizationUsers = async (
   }
 
   debug(
-    `Retrieved ${all_users.size} unique users from ${organizations.length} organizations`
+    `Retrieved ${all_users.size} unique user(s) from ${organizations.length} organization(s) and ${team_configs ? team_configs.length : 0} team(s)`
   )
   return Array.from(all_users)
 }

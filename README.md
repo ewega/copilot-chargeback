@@ -15,13 +15,13 @@ their appropriate cost center.
 
 ## Inputs
 
-| Name                      | Description                                                               | Required |
-| ------------------------- | ------------------------------------------------------------------------- | -------- |
-| `github_organization`     | The GitHub organization to sync users from                                | Yes      |
-| `github_team`             | GitHub team name (optional - if provided, only sync users from this team) | No       |
-| `github_cost_center_name` | The name of the GitHub Cost Center to sync users to                       | Yes      |
-| `github_enterprise`       | The GitHub Enterprise slug                                                | Yes      |
-| `github_token`            | GitHub Personal Access Token with appropriate permissions                 | Yes      |
+| Name                      | Description                                                                                                  | Required |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------ | -------- |
+| `github_organization`     | The GitHub organization to sync users from                                                                   | Yes      |
+| `github_team`             | JSON array of org-team pairs. Format: `[{"org": "org1", "team": "team1"}, {"org": "org2", "team": "team2"}]` | No       |
+| `github_cost_center_name` | The name of the GitHub Cost Center to sync users to                                                          | Yes      |
+| `github_enterprise`       | The GitHub Enterprise slug                                                                                   | Yes      |
+| `github_token`            | GitHub Personal Access Token with appropriate permissions                                                    | Yes      |
 
 ## Usage
 

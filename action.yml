@@ -6,7 +6,8 @@ author: 'Your name or organization here'
 inputs:
   github_team:
     description:
-      'GitHub team name (optional - if provided, only sync users from this team)'
+      'JSON array of org-team pairs. Format: [{"org": "org1", "team": "team1"},
+      {"org": "org2", "team": "team2"}]'
     required: false
   github_cost_center_name:
     description: 'GitHub Cost Center Name'

@@ -123,11 +123,13 @@ describe('action', () => {
   })
 
   it('handles team filtering when team is specified', async () => {
-    // Add test for team filtering
     getInputMock.mockImplementation(name => {
       switch (name) {
         case 'github_team':
-          return 'test-team'
+          return JSON.stringify([
+            { org: 'org1', team: 'team1' },
+            { org: 'org2', team: 'team2' }
+          ])
         case 'github_cost_center_name':
           return 'test-cost-center'
         case 'github_enterprise':
@@ -140,15 +142,19 @@ describe('action', () => {
     })
 
     mockOctokit.request.mockResolvedValueOnce(mockCostCenterResponse)
-    mockOctokit.rest.teams.listMembersInOrg.mockResolvedValue({
-      data: [{ login: 'team-user1' }]
-    })
+    mockOctokit.rest.teams.listMembersInOrg
+      .mockResolvedValueOnce({ data: [{ login: 'team1-user1' }] })
+      .mockResolvedValueOnce({ data: [{ login: 'team2-user1' }] })
 
     await main.run()
 
     expect(mockOctokit.rest.teams.listMembersInOrg).toHaveBeenCalledWith({
-      org: expect.any(String),
-      team_slug: 'test-team'
+      org: 'org1',
+      team_slug: 'team1'
+    })
+    expect(mockOctokit.rest.teams.listMembersInOrg).toHaveBeenCalledWith({
+      org: 'org2',
+      team_slug: 'team2'
     })
   })
 
