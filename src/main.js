@@ -1,6 +1,5 @@
 const core = require('@actions/core')
 const github = require('@actions/github')
-const axios = require('axios')
 
 /**
  * The main function for the action.
@@ -8,69 +7,63 @@ const axios = require('axios')
  */
 async function run() {
   try {
-    const githubOrganization = core.getInput('github_organization', {
+    const github_team = core.getInput('github_team', { required: false })
+    const github_cost_center_name = core.getInput('github_cost_center_name', {
       required: true
     })
-    const githubTeam = core.getInput('github_team', { required: false })
-    const githubCostCenterName = core.getInput('github_cost_center_name', {
+    const github_enterprise = core.getInput('github_enterprise', {
       required: true
     })
+    const github_token = core.getInput('github_token', { required: true })
 
-    const octokit = github.getOctokit(process.env.GITHUB_TOKEN)
+    const octokit = github.getOctokit(github_token)
 
-    // Fetch users from GitHub organization or team
-    let githubUsers = []
-    if (githubTeam) {
-      const { data: teamMembers } = await octokit.rest.teams.listMembersInOrg({
-        org: githubOrganization,
-        team_slug: githubTeam
-      })
-      githubUsers = teamMembers.map(member => member.login)
-    } else {
-      const { data: orgMembers } = await octokit.rest.orgs.listMembers({
-        org: githubOrganization
-      })
-      githubUsers = orgMembers.map(member => member.login)
-    }
+    // Get cost center details including organizations
+    const [cost_center_id, cost_center_users, cost_center_orgs] =
+      await getCostCenter(octokit, github_enterprise, github_cost_center_name)
 
-    // Fetch users from GitHub Cost Center
-    const { data: costCenterUsers } = await axios.get(
-      `https://api.github.com/cost-centers/${githubCostCenterName}/users`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.GITHUB_TOKEN}`
-        }
-      }
+    // Get all users from all organizations in the cost center
+    const github_users = await getOrganizationUsers(
+      octokit,
+      cost_center_orgs,
+      github_team
     )
-    const costCenterUsernames = costCenterUsers.map(user => user.login)
 
     // Compare and update users in the cost center
-    const usersToAdd = githubUsers.filter(
-      user => !costCenterUsernames.includes(user)
+    const users_to_add = github_users.filter(
+      user => !cost_center_users.includes(user)
     )
-    const usersToRemove = costCenterUsernames.filter(
-      user => !githubUsers.includes(user)
+    const users_to_remove = cost_center_users.filter(
+      user => !github_users.includes(user)
     )
 
-    for (const user of usersToAdd) {
-      await axios.post(
-        `https://api.github.com/cost-centers/${githubCostCenterName}/users`,
-        { username: user },
+    console.log(`[DEBUG] Users to add: ${users_to_add.join(', ')}`)
+    console.log(`[DEBUG] Users to remove: ${users_to_remove.join(', ')}`)
+
+    for (const user of users_to_add) {
+      console.log(
+        `[DEBUG] Adding user: ${user} to cost center: ${cost_center_id}`
+      )
+      await octokit.request(
+        'POST /enterprises/{enterprise}/settings/billing/cost-centers/{cost_center_id}/resource',
         {
-          headers: {
-            Authorization: `Bearer ${process.env.GITHUB_TOKEN}`
-          }
+          enterprise: github_enterprise,
+          cost_center_id,
+          users: [user]
         }
       )
     }
 
-    for (const user of usersToRemove) {
-      await axios.delete(
-        `https://api.github.com/cost-centers/${githubCostCenterName}/users/${user}`,
+    for (const user of users_to_remove) {
+      console.log(
+        `[DEBUG] Removing user: ${user} from cost center: ${cost_center_id}`
+      )
+      await octokit.request(
+        'DELETE /enterprises/{enterprise}/settings/billing/cost-centers/{cost_center_id}/resource',
         {
-          headers: {
-            Authorization: `Bearer ${process.env.GITHUB_TOKEN}`
-          }
+          enterprise: github_enterprise,
+          cost_center_id,
+          users: [user]
         }
       )
     }
@@ -78,11 +71,114 @@ async function run() {
     // Set outputs for other workflow steps to use
     core.setOutput(
       'result',
-      `Added users: ${usersToAdd.join(', ')}, Removed users: ${usersToRemove.join(', ')}`
+      `Added users: ${users_to_add.join(', ')}, Removed users: ${users_to_remove.join(', ')}`
     )
   } catch (error) {
     // Fail the workflow run if an error occurs
     core.setFailed(error.message)
+  }
+}
+
+const getOrganizationUsers = async (
+  octokit,
+  organizations,
+  team_name = null
+) => {
+  const all_users = new Set()
+
+  for (const org of organizations) {
+    if (team_name) {
+      console.log(
+        `[DEBUG] Fetching team members for team: ${team_name} in org: ${org}`
+      )
+      try {
+        const { data: team_members } =
+          await octokit.rest.teams.listMembersInOrg({
+            org,
+            team_slug: team_name
+          })
+        for (const member of team_members) {
+          all_users.add(member.login)
+        }
+      } catch (error) {
+        console.warn(
+          `[WARN] Could not fetch team ${team_name} from org ${org}: ${error.message}`
+        )
+      }
+    } else {
+      console.log(`[DEBUG] Fetching organization members for org: ${org}`)
+      try {
+        const { data: org_members } = await octokit.rest.orgs.listMembers({
+          org
+        })
+        for (const member of org_members) {
+          all_users.add(member.login)
+        }
+      } catch (error) {
+        console.warn(
+          `[WARN] Could not fetch members from org ${org}: ${error.message}`
+        )
+      }
+    }
+  }
+
+  console.log(
+    `[DEBUG] Retrieved ${all_users.size} unique users from ${organizations.length} organizations`
+  )
+  return Array.from(all_users)
+}
+
+const getCostCenter = async (octokit, github_enterprise, cost_center_name) => {
+  console.log(
+    `[DEBUG] Getting cost center details for name: ${cost_center_name} in enterprise: ${github_enterprise}`
+  )
+  const start_time = Date.now()
+
+  try {
+    const { data: cost_centers_data } = await octokit.request(
+      'GET /enterprises/{enterprise}/settings/billing/cost-centers',
+      {
+        enterprise: github_enterprise
+      }
+    )
+
+    const cost_center = cost_centers_data.costCenters.find(
+      center => center.name === cost_center_name
+    )
+
+    if (!cost_center) {
+      console.error(
+        `[ERROR] Cost center not found. Available centers: ${cost_centers_data.costCenters.map(c => c.name).join(', ')}`
+      )
+      throw new Error(`Cost center with name ${cost_center_name} not found`)
+    }
+
+    // Extract organizations and users from resources array
+    const org_resources = cost_center.resources.filter(
+      resource => resource.type === 'Org'
+    )
+    const user_resources = cost_center.resources.filter(
+      resource => resource.type === 'User'
+    )
+
+    const organization_names = org_resources.map(org => org.name)
+    const user_names = user_resources.map(user => user.name)
+
+    const execution_time = Date.now() - start_time
+    console.log(
+      `[DEBUG] Found cost center ID: ${cost_center.id} with ${organization_names.length} organizations and ${user_names.length} direct users (took ${execution_time}ms)`
+    )
+
+    return [cost_center.id, user_names, organization_names]
+  } catch (error) {
+    console.error('[ERROR] Failed to get cost center ID:', error.message)
+    if (error.response) {
+      console.error('[ERROR] API Response:', {
+        status: error.response.status,
+        data: error.response.data
+      })
+    }
+    throw error
   }
 }
 

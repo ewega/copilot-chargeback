@@ -4,14 +4,18 @@ author: 'Your name or organization here'
 
 # Define your inputs here.
 inputs:
-  github_organization:
-    description: 'GitHub organization name'
-    required: true
   github_team:
-    description: 'GitHub team name (optional)'
+    description:
+      'GitHub team name (optional - if provided, only sync users from this team)'
     required: false
   github_cost_center_name:
     description: 'GitHub Cost Center Name'
+    required: true
+  github_enterprise:
+    description: 'GitHub Enterprise slug'
+    required: true
+  github_token:
+    description: 'GitHub Personal Access Token with appropriate permissions'
     required: true
 
 # Define your outputs here.
