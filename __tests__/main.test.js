@@ -1,16 +1,18 @@
-/**
- * Unit tests for the action's main functionality, src/main.js
- */
 const core = require('@actions/core')
 const github = require('@actions/github')
 const axios = require('axios')
 const main = require('../src/main')
+const {
+  mock_cost_center,
+  mock_team_members,
+  mock_org_members
+} = require('./test-fixtures')
 
 // Mock the GitHub Actions core library
-const debugMock = jest.spyOn(core, 'debug').mockImplementation()
-const getInputMock = jest.spyOn(core, 'getInput').mockImplementation()
-const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
-const setOutputMock = jest.spyOn(core, 'setOutput').mockImplementation()
+const debug_mock = jest.spyOn(core, 'debug').mockImplementation()
+const input_mock = jest.spyOn(core, 'getInput').mockImplementation()
+const failed_mock = jest.spyOn(core, 'setFailed').mockImplementation()
+const output_mock = jest.spyOn(core, 'setOutput').mockImplementation()
 
 // Mock the GitHub API
 jest.mock('@actions/github', () => ({
@@ -67,14 +69,54 @@ const mockOctokit = {
 // Mock getOctokit to return our mock instance
 jest.spyOn(github, 'getOctokit').mockImplementation(() => mockOctokit)
 
+// Mock cost center API response
+const mockCostCenterResponse = {
+  data: {
+    costCenters: [
+      {
+        id: 'test-id-123',
+        name: 'test-cost-center',
+        resources: [
+          { type: 'Org', name: 'org1' },
+          { type: 'Org', name: 'org2' },
+          { type: 'User', name: 'direct-user1' },
+          { type: 'User', name: 'direct-user2' },
+          { type: 'Repo', name: 'some-repo' }
+        ]
+      }
+    ]
+  }
+}
+
+// Mock the Octokit instance
+const github_mock = {
+  rest: {
+    teams: {
+      listMembersInOrg: jest.fn()
+    },
+    orgs: {
+      listMembers: jest.fn()
+    }
+  },
+  request: jest.fn()
+}
+
+// Mock getOctokit to return our mock instance
+jest.spyOn(github, 'getOctokit').mockImplementation(() => github_mock)
+
 describe('action', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    github_mock.rest.teams.listMembersInOrg.mockReset()
+    github_mock.rest.orgs.listMembers.mockReset()
+    axios.get.mockReset()
   })
 
   it('syncs users from organizations to cost center', async () => {
     // Set up input mocks
     getInputMock.mockImplementation(name => {
+  it('syncs users from organizations to cost center', async () => {
+    input_mock.mockImplementation(name => {
       switch (name) {
         case 'github_cost_center_name':
           return 'test-cost-center'
@@ -99,6 +141,11 @@ describe('action', () => {
         data: [{ login: 'org2-user1' }, { login: 'org1-user2' }]
       })
 
+    github_mock.request.mockResolvedValueOnce(mock_cost_center)
+    github_mock.rest.orgs.listMembers
+      .mockResolvedValueOnce(mock_org_members.org1)
+      .mockResolvedValueOnce(mock_org_members.org2)
+
     await main.run()
 
     // Verify cost center was fetched
@@ -119,11 +166,31 @@ describe('action', () => {
     expect(setOutputMock).toHaveBeenCalledWith(
       'result',
       expect.stringContaining('org1-user1')
+
+    expect(github_mock.request).toHaveBeenCalledWith(
+      'GET /enterprises/{enterprise}/settings/billing/cost-centers',
+      { enterprise: 'test-enterprise' }
+    )
+
+    // Verify org members were fetched for both orgs
+    expect(github_mock.rest.orgs.listMembers).toHaveBeenCalledWith({
+      org: 'org1'
+    })
+    expect(github_mock.rest.orgs.listMembers).toHaveBeenCalledWith({
+      org: 'org2'
+    })
+
+    // Verify correct users were added/removed
+    expect(output_mock).toHaveBeenCalledWith(
+      'result',
+      expect.stringContaining('org1-user1')
     )
   })
 
   it('handles team filtering when team is specified', async () => {
     getInputMock.mockImplementation(name => {
+  it('handles team filtering when team is specified', async () => {
+    input_mock.mockImplementation(name => {
       switch (name) {
         case 'github_team':
           return JSON.stringify([
@@ -146,6 +213,11 @@ describe('action', () => {
       .mockResolvedValueOnce({ data: [{ login: 'team1-user1' }] })
       .mockResolvedValueOnce({ data: [{ login: 'team2-user1' }] })
 
+    github_mock.request.mockResolvedValueOnce(mock_cost_center)
+    github_mock.rest.teams.listMembersInOrg
+      .mockResolvedValueOnce(mock_team_members.team1)
+      .mockResolvedValueOnce(mock_team_members.team2)
+
     await main.run()
 
     expect(mockOctokit.rest.teams.listMembersInOrg).toHaveBeenCalledWith({
@@ -156,10 +228,21 @@ describe('action', () => {
       org: 'org2',
       team_slug: 'team2'
     })
+
+    expect(github_mock.rest.teams.listMembersInOrg).toHaveBeenCalledWith({
+      org: 'org1',
+      team_slug: 'team1'
+    })
+    expect(github_mock.rest.teams.listMembersInOrg).toHaveBeenCalledWith({
+      org: 'org2',
+      team_slug: 'team2'
+    })
   })
 
   it('handles errors gracefully', async () => {
     getInputMock.mockImplementation(name => {
+  it('handles errors gracefully', async () => {
+    input_mock.mockImplementation(name => {
       switch (name) {
         case 'github_cost_center_name':
           return 'nonexistent-cost-center'
@@ -174,8 +257,15 @@ describe('action', () => {
 
     mockOctokit.request.mockRejectedValueOnce(new Error('API error'))
 
+    const api_error = new Error('API error')
+    github_mock.request.mockRejectedValueOnce(api_error)
+
     await main.run()
 
     expect(setFailedMock).toHaveBeenCalledWith('API error')
+
+    expect(failed_mock).toHaveBeenCalledWith(
+      expect.stringContaining('API error')
+    )
   })
 })
