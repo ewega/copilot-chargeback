@@ -1,5 +1,7 @@
 name: 'GitHub Copilot Chargeback'
-description: 'Sync GitHub organization or team members with GitHub Cost Centers for Copilot billing management'
+description:
+  'Sync GitHub organization or team members with GitHub Cost Centers for Copilot
+  billing management'
 author: 'ewega'
 
 # Define your inputs here.

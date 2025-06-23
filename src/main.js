@@ -45,27 +45,41 @@ async function run() {
     const costCenterUsernames = costCenterUsers.map(user => user.login)
 
     // Compare and update users in the cost center
-    const usersToAdd = githubUsers.filter(user => !costCenterUsernames.includes(user))
-    const usersToRemove = costCenterUsernames.filter(user => !githubUsers.includes(user))
+    const usersToAdd = githubUsers.filter(
+      user => !costCenterUsernames.includes(user)
+    )
+    const usersToRemove = costCenterUsernames.filter(
+      user => !githubUsers.includes(user)
+    )
 
     for (const user of usersToAdd) {
-      await axios.post(`https://api.github.com/cost-centers/${githubCostCenterName}/users`, { username: user }, {
-        headers: {
-          Authorization: `Bearer ${process.env.GITHUB_TOKEN}`
+      await axios.post(
+        `https://api.github.com/cost-centers/${githubCostCenterName}/users`,
+        { username: user },
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.GITHUB_TOKEN}`
+          }
         }
-      })
+      )
     }
 
     for (const user of usersToRemove) {
-      await axios.delete(`https://api.github.com/cost-centers/${githubCostCenterName}/users/${user}`, {
-        headers: {
-          Authorization: `Bearer ${process.env.GITHUB_TOKEN}`
+      await axios.delete(
+        `https://api.github.com/cost-centers/${githubCostCenterName}/users/${user}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.GITHUB_TOKEN}`
+          }
         }
-      })
+      )
     }
 
     // Set outputs for other workflow steps to use
-    core.setOutput('result', `Added users: ${usersToAdd.join(', ')}, Removed users: ${usersToRemove.join(', ')}`)
+    core.setOutput(
+      'result',
+      `Added users: ${usersToAdd.join(', ')}, Removed users: ${usersToRemove.join(', ')}`
+    )
   } catch (error) {
     // Fail the workflow run if an error occurs
     core.setFailed(error.message)
