@@ -8,9 +8,13 @@ const axios = require('axios')
  */
 async function run() {
   try {
-    const githubOrganization = core.getInput('github_organization', {⏎······required:·true⏎···})
+    const githubOrganization = core.getInput('github_organization', {
+      required: true
+    })
     const githubTeam = core.getInput('github_team', { required: false })
-    const githubCostCenterName = core.getInput('github_cost_center_name', {⏎······required:·true⏎···})
+    const githubCostCenterName = core.getInput('github_cost_center_name', {
+      required: true
+    })
 
     const octokit = github.getOctokit(process.env.GITHUB_TOKEN)
 
@@ -30,11 +34,14 @@ async function run() {
     }
 
     // Fetch users from GitHub Cost Center
-    const { data: costCenterUsers } = await axios.get(⏎······`https://api.github.com/cost-centers/${githubCostCenterName}/users`,⏎·····{
-      headers: {
-        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`
+    const { data: costCenterUsers } = await axios.get(
+      `https://api.github.com/cost-centers/${githubCostCenterName}/users`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.GITHUB_TOKEN}`
+        }
       }
-    })
+    )
     const costCenterUsernames = costCenterUsers.map(user => user.login)
 
     // Compare and update users in the cost center
