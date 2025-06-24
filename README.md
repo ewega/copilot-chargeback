@@ -1,231 +1,289 @@
-# Create a JavaScript Action
+# GitHub Copilot Chargeback Action
 
-[![GitHub Super-Linter](https://github.com/actions/javascript-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
-![CI](https://github.com/actions/javascript-action/actions/workflows/ci.yml/badge.svg)
+[![GitHub Super-Linter](https://github.com/ewega/copilot-chargeback/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
+![CI](https://github.com/ewega/copilot-chargeback/actions/workflows/ci.yml/badge.svg)
 
-Use this template to bootstrap the creation of a JavaScript action. :rocket:
+A GitHub Action that automatically synchronizes GitHub organization or team
+members with GitHub Cost Centers for Copilot billing management. This action
+helps organizations implement automated chargeback systems by ensuring that the
+right users are assigned to the appropriate cost centers for GitHub Copilot
+usage tracking and billing.
 
-This template includes compilation support, tests, a validation workflow,
-publishing, and versioning guidance.
+## What This Action Does
 
-If you are new, there's also a simpler introduction in the
-[Hello world JavaScript action repository](https://github.com/actions/hello-world-javascript-action).
+The GitHub Copilot Chargeback Action:
 
-## Create Your Own Action
+- **Fetches users** from a specified GitHub organization or team
+- **Synchronizes membership** with a GitHub Cost Center
+- **Automatically adds** new users to the cost center when they join the
+  organization/team
+- **Automatically removes** users from the cost center when they leave the
+  organization/team
+- **Provides detailed output** of all changes made during synchronization
 
-To create your own action, you can use this repository as a template! Just
-follow the below instructions:
+This automation ensures accurate billing allocation for GitHub Copilot usage
+across your organization without manual intervention.
 
-1. Click the **Use this template** button at the top of the repository
-1. Select **Create a new repository**
-1. Select an owner and name for your new repository
-1. Click **Create repository**
-1. Clone your new repository
+## Prerequisites
 
-> [!IMPORTANT]
->
-> Make sure to remove or update the [`CODEOWNERS`](./CODEOWNERS) file! For
-> details on how to use this file, see
-> [About code owners](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners).
+Before using this Action, ensure you have:
 
-## Initial Setup
+1. **GitHub Cost Centers set up** in your GitHub organization
+2. **A GitHub Personal Access Token (PAT)** or **GitHub App** with appropriate
+   permissions:
+   - `org:read` - to read organization members
+   - `org:admin` - to manage cost centers (if using PAT)
+   - Cost center management permissions (if using GitHub App)
+3. **Organization or team membership** that you want to sync with the cost
+   center
 
-After you've cloned the repository to your local machine or codespace, you'll
-need to perform some initial setup steps before you can develop your action.
+## Setup Instructions
 
-> [!NOTE]
->
-> You'll need to have a reasonably modern version of
-> [Node.js](https://nodejs.org) handy. If you are using a version manager like
-> [`nodenv`](https://github.com/nodenv/nodenv) or
-> [`nvm`](https://github.com/nvm-sh/nvm), you can run `nodenv install` in the
-> root of your repository to install the version specified in
-> [`package.json`](./package.json). Otherwise, 20.x or later should work!
+### 1. Set up GitHub Token
 
-1. :hammer_and_wrench: Install the dependencies
+Create a GitHub Personal Access Token or GitHub App with the required
+permissions and add it as a repository secret:
 
-   ```bash
-   npm install
-   ```
+1. Go to your repository's **Settings** → **Secrets and variables** →
+   **Actions**
+2. Click **New repository secret**
+3. Name: `GITHUB_TOKEN`
+4. Value: Your PAT or GitHub App token
 
-1. :building_construction: Package the JavaScript for distribution
+### 2. Identify Your Cost Center
 
-   ```bash
-   npm run bundle
-   ```
+Find the name of the GitHub Cost Center you want to sync with:
 
-1. :white_check_mark: Run the tests
+1. Go to your GitHub organization settings
+2. Navigate to **Billing and plans** → **Cost centers**
+3. Note the exact name of the cost center you want to manage
 
-   ```bash
-   $ npm test
+### 3. Create Workflow File
 
-   PASS  ./index.test.js
-     ✓ throws invalid number (3ms)
-     ✓ wait 500 ms (504ms)
-     ✓ test runs (95ms)
+Create a workflow file in your repository (e.g.,
+`.github/workflows/copilot-chargeback.yml`) using the examples below.
 
-   ...
-   ```
+## Usage Examples
 
-## Update the Action Metadata
+### Example 1: Sync Entire Organization
 
-The [`action.yml`](action.yml) file defines metadata about your action, such as
-input(s) and output(s). For details about this file, see
-[Metadata syntax for GitHub Actions](https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions).
-
-When you copy this repository, update `action.yml` with the name, description,
-inputs, and outputs for your action.
-
-## Update the Action Code
-
-The [`src/`](./src/) directory is the heart of your action! This contains the
-source code that will be run when your action is invoked. You can replace the
-contents of this directory with your own code.
-
-There are a few things to keep in mind when writing your action code:
-
-- Most GitHub Actions toolkit and CI/CD operations are processed asynchronously.
-  In `main.js`, you will see that the action is run in an `async` function.
-
-  ```javascript
-  const core = require('@actions/core')
-  //...
-
-  async function run() {
-    try {
-      //...
-    } catch (error) {
-      core.setFailed(error.message)
-    }
-  }
-  ```
-
-  For more information about the GitHub Actions toolkit, see the
-  [documentation](https://github.com/actions/toolkit/blob/main/README.md).
-
-So, what are you waiting for? Go ahead and start customizing your action!
-
-1. Create a new branch
-
-   ```bash
-   git checkout -b releases/v1
-   ```
-
-1. Replace the contents of `src/` with your action code
-1. Add tests to `__tests__/` for your source code
-1. Format, test, and build the action
-
-   ```bash
-   npm run all
-   ```
-
-   > This step is important! It will run [`ncc`](https://github.com/vercel/ncc)
-   > to build the final JavaScript action code with all dependencies included.
-   > If you do not run this step, your action will not work correctly when it is
-   > used in a workflow. This step also includes the `--license` option for
-   > `ncc`, which will create a license file for all of the production node
-   > modules used in your project.
-
-1. (Optional) Test your action locally
-
-   The [`@github/local-action`](https://github.com/github/local-action) utility
-   can be used to test your action locally. It is a simple command-line tool
-   that "stubs" (or simulates) the GitHub Actions Toolkit. This way, you can run
-   your JavaScript action locally without having to commit and push your changes
-   to a repository.
-
-   The `local-action` utility can be run in the following ways:
-
-   - Visual Studio Code Debugger
-
-     Make sure to review and, if needed, update
-     [`.vscode/launch.json`](./.vscode/launch.json)
-
-   - Terminal/Command Prompt
-
-     ```bash
-     # npx local action <action-yaml-path> <entrypoint> <dotenv-file>
-     npx local-action . src/main.js .env
-     ```
-
-   You can provide a `.env` file to the `local-action` CLI to set environment
-   variables used by the GitHub Actions Toolkit. For example, setting inputs and
-   event payload data used by your action. For more information, see the example
-   file, [`.env.example`](./.env.example), and the
-   [GitHub Actions Documentation](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
-
-1. Commit your changes
-
-   ```bash
-   git add .
-   git commit -m "My first action is ready!"
-   ```
-
-1. Push them to your repository
-
-   ```bash
-   git push -u origin releases/v1
-   ```
-
-1. Create a pull request and get feedback on your action
-1. Merge the pull request into the `main` branch
-
-Your action is now published! :rocket:
-
-For information about versioning your action, see
-[Versioning](https://github.com/actions/toolkit/blob/main/docs/action-versioning.md)
-in the GitHub Actions toolkit.
-
-## Validate the Action
-
-You can now validate the action by referencing it in a workflow file. For
-example, [`ci.yml`](./.github/workflows/ci.yml) demonstrates how to reference an
-action in the same repository.
+Synchronize all members of a GitHub organization with a cost center:
 
 ```yaml
-steps:
-  - name: Checkout
-    id: checkout
-    uses: actions/checkout@v3
+name: Copilot Chargeback - Organization Sync
 
-  - name: Test Local Action
-    id: test-action
-    uses: ./
-    with:
-      milliseconds: 1000
+on:
+  schedule:
+    # Run daily at 9 AM UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Allow manual triggering
 
-  - name: Print Output
-    id: output
-    run: echo "${{ steps.test-action.outputs.time }}"
+permissions:
+  contents: read
+
+jobs:
+  sync-organization:
+    runs-on: ubuntu-latest
+    name: Sync Organization Members to Cost Center
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync GitHub Copilot Chargeback
+        id: copilot-chargeback
+        uses: ewega/copilot-chargeback@v1
+        with:
+          github_organization: 'your-org-name'
+          github_cost_center_name: 'Engineering-Department'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Display Results
+        run: echo "Sync completed: ${{ steps.copilot-chargeback.outputs.result }}"
 ```
 
-For example workflow runs, check out the
-[Actions tab](https://github.com/actions/javascript-action/actions)! :rocket:
+### Example 2: Sync Specific Team
 
-## Usage
-
-After testing, you can create version tag(s) that developers can use to
-reference different stable versions of your action. For more information, see
-[Versioning](https://github.com/actions/toolkit/blob/main/docs/action-versioning.md)
-in the GitHub Actions toolkit.
-
-To include the action in a workflow in another repository, you can use the
-`uses` syntax with the `@` symbol to reference a specific branch, tag, or commit
-hash.
+Synchronize only members of a specific team within an organization:
 
 ```yaml
-steps:
-  - name: Checkout
-    id: checkout
-    uses: actions/checkout@v4
+name: Copilot Chargeback - Team Sync
 
-  - name: Run my Action
-    id: run-action
-    uses: actions/javascript-action@v1 # Commit with the `v1` tag
-    with:
-      milliseconds: 1000
+on:
+  schedule:
+    # Run twice daily
+    - cron: '0 9,17 * * *'
+  workflow_dispatch:
 
-  - name: Print Output
-    id: output
-    run: echo "${{ steps.run-action.outputs.time }}"
+permissions:
+  contents: read
+
+jobs:
+  sync-team:
+    runs-on: ubuntu-latest
+    name: Sync Team Members to Cost Center
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync Frontend Team to Cost Center
+        id: frontend-sync
+        uses: ewega/copilot-chargeback@v1
+        with:
+          github_organization: 'your-org-name'
+          github_team: 'frontend-team'
+          github_cost_center_name: 'Frontend-Development'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Display Results
+        run: echo "Frontend team sync: ${{ steps.frontend-sync.outputs.result }}"
 ```
+
+### Example 3: Multiple Team Sync
+
+Synchronize multiple teams to different cost centers:
+
+```yaml
+name: Copilot Chargeback - Multi-Team Sync
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync-teams:
+    runs-on: ubuntu-latest
+    name: Sync Multiple Teams
+    strategy:
+      matrix:
+        team_config:
+          - team: 'frontend-team'
+            cost_center: 'Frontend-Development'
+          - team: 'backend-team'
+            cost_center: 'Backend-Development'
+          - team: 'devops-team'
+            cost_center: 'Infrastructure'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync ${{ matrix.team_config.team }}
+        id: team-sync
+        uses: ewega/copilot-chargeback@v1
+        with:
+          github_organization: 'your-org-name'
+          github_team: ${{ matrix.team_config.team }}
+          github_cost_center_name: ${{ matrix.team_config.cost_center }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Display Results for ${{ matrix.team_config.team }}
+        run: echo "${{ matrix.team_config.team }} sync: ${{ steps.team-sync.outputs.result }}"
+```
+
+## Input Parameters
+
+| Parameter                 | Required | Description                                                                                         | Example                  |
+| ------------------------- | -------- | --------------------------------------------------------------------------------------------------- | ------------------------ |
+| `github_organization`     | **Yes**  | The name of the GitHub organization                                                                 | `my-company`             |
+| `github_team`             | No       | The name of the team within the organization (if not provided, all organization members are synced) | `frontend-team`          |
+| `github_cost_center_name` | **Yes**  | The exact name of the GitHub Cost Center                                                            | `Engineering-Department` |
+
+## Output Parameters
+
+| Parameter | Description                                    | Example                                       |
+| --------- | ---------------------------------------------- | --------------------------------------------- |
+| `result`  | Summary of users added and removed during sync | `Added users: john, jane, Removed users: bob` |
+
+## Environment Variables
+
+| Variable       | Required | Description                                                                   |
+| -------------- | -------- | ----------------------------------------------------------------------------- |
+| `GITHUB_TOKEN` | **Yes**  | GitHub Personal Access Token or GitHub App token with appropriate permissions |
+
+## Scheduling Recommendations
+
+Consider these scheduling patterns based on your organization's needs:
+
+- **Daily sync**: `cron: '0 9 * * *'` - Good for most organizations
+- **Twice daily**: `cron: '0 9,17 * * *'` - For rapidly changing teams
+- **Weekly sync**: `cron: '0 9 * * 1'` - For stable organizations
+- **Manual only**: `workflow_dispatch` - For testing or controlled updates
+
+## Error Handling
+
+The action will fail gracefully if:
+
+- Required inputs are missing
+- GitHub API calls fail (network issues, permission problems)
+- Cost center doesn't exist
+- Authentication fails
+
+Check the workflow logs for detailed error messages to troubleshoot issues.
+
+## Security Considerations
+
+- **Token Security**: Never commit tokens directly to your repository. Always
+  use GitHub secrets.
+- **Minimum Permissions**: Grant only the minimum required permissions to your
+  GitHub token.
+- **Regular Rotation**: Regularly rotate your GitHub tokens according to your
+  security policy.
+- **Audit Logs**: Monitor GitHub audit logs for cost center changes made by this
+  action.
+
+## Troubleshooting
+
+### Common Issues
+
+1. **"Cost center not found"**
+
+   - Verify the exact name of your cost center (case-sensitive)
+   - Ensure your token has cost center management permissions
+
+2. **"Organization not found"**
+
+   - Check the organization name spelling
+   - Verify your token has access to the organization
+
+3. **"Team not found"**
+
+   - Ensure the team exists in the specified organization
+   - Verify team name spelling (use the team slug, not display name)
+
+4. **"Insufficient permissions"**
+   - Check that your GitHub token has the required scopes
+   - Verify you have admin access to the organization/cost center
+
+### Getting Help
+
+If you encounter issues:
+
+1. Check the [workflow run logs](../../actions) for detailed error messages
+2. Verify your [action inputs](#input-parameters) are correct
+3. Test with a simple organization sync first
+4. Open an [issue](../../issues) with details about your setup and error
+   messages
+
+## Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
+for details.
