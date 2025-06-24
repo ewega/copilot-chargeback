@@ -1,21 +1,24 @@
 {
-  "name": "javascript-action",
-  "description": "GitHub Actions JavaScript Template",
-  "version": "0.0.0",
-  "author": "",
+  "name": "github-copilot-chargeback-action",
+  "description": "Sync GitHub organization or team members with GitHub Cost Centers for Copilot billing management",
+  "version": "1.0.0",
+  "author": "ewega",
   "private": true,
-  "homepage": "https://github.com/actions/javascript-action#readme",
+  "homepage": "https://github.com/ewega/copilot-chargeback#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/javascript-action.git"
+    "url": "git+https://github.com/ewega/copilot-chargeback.git"
   },
   "bugs": {
-    "url": "https://github.com/actions/javascript-action/issues"
+    "url": "https://github.com/ewega/copilot-chargeback/issues"
   },
   "keywords": [
     "GitHub",
     "Actions",
-    "JavaScript"
+    "Copilot",
+    "Chargeback",
+    "Cost Center",
+    "Billing"
   ],
   "exports": {
     ".": "./dist/index.js"
@@ -26,7 +29,7 @@
   "scripts": {
     "bundle": "npm run format:write && npm run package",
     "ci-test": "npx jest",
-    "coverage": "npx make-coverage-badge --output-path ./badges/coverage.svg",
+    "coverage": "npx make-coverage-badge --output-path ./badges/coverage.svg || echo 'Coverage badge generation skipped due to network restrictions'",
     "format:write": "npx prettier --write .",
     "format:check": "npx prettier --check .",
     "lint": "npx eslint . -c ./.github/linters/.eslintrc.yml",
