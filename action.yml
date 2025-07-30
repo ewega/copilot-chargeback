@@ -1,6 +1,6 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Copilot Chargeback'
+description: 'Chargeback GitHub Copilot to appropriate cost centers automatically'
+author: 'ewega'
 
 # Define your inputs here.
 inputs:
