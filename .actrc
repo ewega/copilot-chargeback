@@ -1,0 +1,25 @@
+# act configuration file
+# This file configures default settings for the act CLI tool
+
+# Use GitHub's official runner images for better compatibility
+-P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest
+-P ubuntu-22.04=ghcr.io/catthehacker/ubuntu:act-22.04
+-P ubuntu-20.04=ghcr.io/catthehacker/ubuntu:act-20.04
+
+# Default platform to use when none is specified
+--platform ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest
+
+# Enable verbose output for debugging
+--verbose
+
+# Set default artifact server port (useful for testing artifact uploads)
+--artifact-server-port 34567
+
+# Default environment file to use
+--env-file .env.example
+
+# Container options
+--container-options --network=host
+
+# Reuse containers for faster subsequent runs
+--reuse
