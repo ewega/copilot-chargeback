@@ -1,0 +1,37 @@
+[
+  {
+    "login": "user1",
+    "id": 1,
+    "avatar_url": "https://github.com/images/user1.png",
+    "type": "User",
+    "site_admin": false
+  },
+  {
+    "login": "user2",
+    "id": 2,
+    "avatar_url": "https://github.com/images/user2.png",
+    "type": "User",
+    "site_admin": false
+  },
+  {
+    "login": "user3",
+    "id": 3,
+    "avatar_url": "https://github.com/images/user3.png",
+    "type": "User",
+    "site_admin": false
+  },
+  {
+    "login": "user4",
+    "id": 4,
+    "avatar_url": "https://github.com/images/user4.png",
+    "type": "User",
+    "site_admin": false
+  },
+  {
+    "login": "user5",
+    "id": 5,
+    "avatar_url": "https://github.com/images/user5.png",
+    "type": "User",
+    "site_admin": false
+  }
+]

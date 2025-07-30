@@ -1,23 +1,85 @@
-# Create a JavaScript Action
+# Copilot Chargeback GitHub Action
 
-[![GitHub Super-Linter](https://github.com/actions/javascript-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
-![CI](https://github.com/actions/javascript-action/actions/workflows/ci.yml/badge.svg)
+[![GitHub Super-Linter](https://github.com/ewega/copilot-chargeback/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
+![CI](https://github.com/ewega/copilot-chargeback/actions/workflows/ci.yml/badge.svg)
 
-Use this template to bootstrap the creation of a JavaScript action. :rocket:
+Automatically charge back GitHub Copilot usage to appropriate cost centers by syncing organization/team members with cost center management systems.
 
-This template includes compilation support, tests, a validation workflow,
-publishing, and versioning guidance.
+## Overview
 
-If you are new, there's also a simpler introduction in the
-[Hello world JavaScript action repository](https://github.com/actions/hello-world-javascript-action).
+This GitHub Action helps organizations manage GitHub Copilot costs by automatically synchronizing user memberships between GitHub organizations/teams and external cost center management systems.
 
-## Create Your Own Action
+### Features
 
-To create your own action, you can use this repository as a template! Just
-follow the below instructions:
+- Sync GitHub organization members to cost centers
+- Sync specific GitHub team members to cost centers  
+- Add users to cost centers when they join teams
+- Remove users from cost centers when they leave teams
+- Comprehensive testing infrastructure with local and integration testing
+- Mock API server for development and testing
 
-1. Click the **Use this template** button at the top of the repository
-1. Select **Create a new repository**
+## Usage
+
+```yaml
+steps:
+  - name: Sync Copilot Users to Cost Center
+    uses: ewega/copilot-chargeback@v1
+    with:
+      github_organization: 'your-org'
+      github_team: 'engineering-team'  # Optional
+      github_cost_center_name: 'engineering-cost-center'
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+## Inputs
+
+| Input | Description | Required | Default |
+|-------|-------------|----------|---------|
+| `github_organization` | GitHub organization name | Yes | |
+| `github_team` | GitHub team name (if not provided, syncs all org members) | No | |
+| `github_cost_center_name` | Cost center name in the management system | Yes | |
+
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `result` | Summary of users added and removed |
+
+## Environment Variables
+
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `GITHUB_TOKEN` | GitHub Personal Access Token with org and team read permissions | Yes | |
+| `COST_CENTER_API_BASE_URL` | Base URL for cost center API | No | `https://api.github.com` |
+
+## Testing
+
+This action includes comprehensive testing infrastructure for both local development and CI/CD integration.
+
+### Quick Start Testing
+
+1. **Local testing with act**:
+   ```bash
+   ./test-infrastructure/scripts/test-local.sh --scenario basic
+   ```
+
+2. **Integration testing**:
+   ```bash
+   export GITHUB_TOKEN=your_token
+   ./test-infrastructure/scripts/test-integration.sh --dry-run
+   ```
+
+### Documentation
+
+For complete testing instructions, see [docs/TESTING.md](docs/TESTING.md) which covers:
+- Local testing with `act` CLI
+- Mock API server setup and usage
+- Integration testing against real GitHub APIs
+- Test scenarios and troubleshooting
+- Advanced testing configurations
+
+## Development
 1. Select an owner and name for your new repository
 1. Click **Create repository**
 1. Clone your new repository
