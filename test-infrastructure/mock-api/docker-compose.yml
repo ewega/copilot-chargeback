@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  mock-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '3001:3001'
+    environment:
+      - PORT=3001
+      - MOCK_RESPONSE_MODE=success
+      - MOCK_DELAY_MS=100
+    networks:
+      - copilot-test-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Additional service for testing error scenarios
+  mock-api-error:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '3002:3001'
+    environment:
+      - PORT=3001
+      - MOCK_RESPONSE_MODE=error
+      - MOCK_DELAY_MS=500
+    networks:
+      - copilot-test-network
+    profiles:
+      - error-testing
+    restart: unless-stopped
+
+  # Service for timeout testing
+  mock-api-timeout:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '3003:3001'
+    environment:
+      - PORT=3001
+      - MOCK_RESPONSE_MODE=timeout
+      - MOCK_DELAY_MS=5000
+    networks:
+      - copilot-test-network
+    profiles:
+      - timeout-testing
+    restart: unless-stopped
+
+networks:
+  copilot-test-network:
+    driver: bridge

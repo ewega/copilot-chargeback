@@ -33,9 +33,13 @@ async function run() {
       githubUsers = orgMembers.map(member => member.login)
     }
 
+    // Get cost center API base URL (default to GitHub API if not specified)
+    const costCenterApiBaseUrl =
+      process.env.COST_CENTER_API_BASE_URL || 'https://api.github.com'
+
     // Fetch users from GitHub Cost Center
     const { data: costCenterUsers } = await axios.get(
-      `https://api.github.com/cost-centers/${githubCostCenterName}/users`,
+      `${costCenterApiBaseUrl}/cost-centers/${githubCostCenterName}/users`,
       {
         headers: {
           Authorization: `Bearer ${process.env.GITHUB_TOKEN}`
@@ -54,7 +58,7 @@ async function run() {
 
     for (const user of usersToAdd) {
       await axios.post(
-        `https://api.github.com/cost-centers/${githubCostCenterName}/users`,
+        `${costCenterApiBaseUrl}/cost-centers/${githubCostCenterName}/users`,
         { username: user },
         {
           headers: {
@@ -66,7 +70,7 @@ async function run() {
 
     for (const user of usersToRemove) {
       await axios.delete(
-        `https://api.github.com/cost-centers/${githubCostCenterName}/users/${user}`,
+        `${costCenterApiBaseUrl}/cost-centers/${githubCostCenterName}/users/${user}`,
         {
           headers: {
             Authorization: `Bearer ${process.env.GITHUB_TOKEN}`

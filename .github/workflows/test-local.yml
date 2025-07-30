@@ -2,9 +2,9 @@ name: Local Testing with act
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
     inputs:
       test_scenario:
@@ -25,20 +25,20 @@ jobs:
   test-local-basic:
     name: Test Basic Functionality
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
           cache: npm
-          
+
       - name: Install Dependencies
         run: npm ci
-        
+
       - name: Start Mock API Server
         run: |
           cd test-infrastructure/mock-api
@@ -48,7 +48,7 @@ jobs:
           # Wait for server to be ready
           curl -f http://localhost:3001/health || exit 1
         continue-on-error: false
-        
+
       - name: Test Action (Basic Scenario)
         id: test-basic
         uses: ./
@@ -59,12 +59,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN || 'fake-token-for-testing' }}
           COST_CENTER_API_BASE_URL: http://localhost:3001
-          
+
       - name: Verify Results
         run: |
           echo "Action result: ${{ steps.test-basic.outputs.result }}"
           # Add validation logic here
-          
+
       - name: Stop Mock API Server
         if: always()
         run: |
@@ -73,21 +73,24 @@ jobs:
   test-local-org-only:
     name: Test Organization-Only Sync
     runs-on: ubuntu-latest
-    if: github.event.inputs.test_scenario == 'org-only' || github.event.inputs.test_scenario == '' || github.event_name != 'workflow_dispatch'
-    
+    if:
+      github.event.inputs.test_scenario == 'org-only' ||
+      github.event.inputs.test_scenario == '' || github.event_name !=
+      'workflow_dispatch'
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
           cache: npm
-          
+
       - name: Install Dependencies
         run: npm ci
-        
+
       - name: Start Mock API Server
         run: |
           cd test-infrastructure/mock-api
@@ -95,7 +98,7 @@ jobs:
           npm start &
           sleep 5
           curl -f http://localhost:3001/health || exit 1
-        
+
       - name: Test Action (Organization-Only)
         id: test-org-only
         uses: ./
@@ -106,11 +109,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN || 'fake-token-for-testing' }}
           COST_CENTER_API_BASE_URL: http://localhost:3001
-          
+
       - name: Verify Results
         run: |
           echo "Action result: ${{ steps.test-org-only.outputs.result }}"
-          
+
       - name: Stop Mock API Server
         if: always()
         run: |
@@ -119,21 +122,24 @@ jobs:
   test-local-error-conditions:
     name: Test Error Conditions
     runs-on: ubuntu-latest
-    if: github.event.inputs.test_scenario == 'error-conditions' || github.event.inputs.test_scenario == '' || github.event_name != 'workflow_dispatch'
-    
+    if:
+      github.event.inputs.test_scenario == 'error-conditions' ||
+      github.event.inputs.test_scenario == '' || github.event_name !=
+      'workflow_dispatch'
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
           cache: npm
-          
+
       - name: Install Dependencies
         run: npm ci
-        
+
       - name: Test Action (Invalid Token)
         id: test-invalid-token
         uses: ./
@@ -145,7 +151,7 @@ jobs:
         env:
           GITHUB_TOKEN: invalid-token
           COST_CENTER_API_BASE_URL: http://localhost:3001
-          
+
       - name: Verify Error Handling
         run: |
           echo "Expected failure occurred: ${{ steps.test-invalid-token.outcome }}"
