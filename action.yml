@@ -1,9 +1,10 @@
 name: 'Copilot Chargeback'
-description: 'Chargeback GitHub Copilot to appropriate cost centers automatically'
+description:
+  'Chargeback GitHub Copilot to appropriate cost centers automatically'
 author: 'ewega'
 branding:
-  icon: "dollar-sign"
-  color: "blue"
+  icon: 'dollar-sign'
+  color: 'blue'
 
 # Define your inputs here.
 inputs:
