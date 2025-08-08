@@ -83,12 +83,6 @@ cleanup_temp_files() {
     find "$ROOT_DIR" -name ".env.tmp*" -type f -delete 2>/dev/null || true
     find "$ROOT_DIR" -name "*.tmp" -type f -delete 2>/dev/null || true
     
-    # Remove act cache and temporary files
-    if [ -d "$HOME/.cache/act" ]; then
-        print_status "Removing act cache..."
-        rm -rf "$HOME/.cache/act"
-    fi
-    
     # Remove npm logs
     find "$ROOT_DIR" -name "npm-debug.log*" -type f -delete 2>/dev/null || true
     find "$ROOT_DIR" -name ".npm" -type d -exec rm -rf {} + 2>/dev/null || true

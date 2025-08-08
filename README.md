@@ -59,12 +59,7 @@ This action includes comprehensive testing infrastructure for both local develop
 
 ### Quick Start Testing
 
-1. **Local testing with act**:
-   ```bash
-   ./test-infrastructure/scripts/test-local.sh --scenario basic
-   ```
-
-2. **Integration testing**:
+1. **Integration testing**:
    ```bash
    export GITHUB_TOKEN=your_token
    ./test-infrastructure/scripts/test-integration.sh --dry-run
@@ -73,7 +68,6 @@ This action includes comprehensive testing infrastructure for both local develop
 ### Documentation
 
 For complete testing instructions, see [docs/TESTING.md](docs/TESTING.md) which covers:
-- Local testing with `act` CLI
 - Mock API server setup and usage
 - Integration testing against real GitHub APIs
 - Test scenarios and troubleshooting

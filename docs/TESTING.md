@@ -8,7 +8,6 @@ infrastructure.
 
 - [Overview](#overview)
 - [Prerequisites](#prerequisites)
-- [Local Testing with act](#local-testing-with-act)
 - [Integration Testing](#integration-testing)
 - [Mock API Server](#mock-api-server)
 - [Test Scenarios](#test-scenarios)
@@ -19,7 +18,6 @@ infrastructure.
 
 The copilot-chargeback action provides the following testing infrastructure:
 
-- **Local Testing**: Use `act` CLI to run GitHub Actions locally
 - **Mock API Server**: Simulates cost center APIs for testing
 - **Integration Testing**: Test against real GitHub APIs with mock cost center
   backend
@@ -37,26 +35,14 @@ The copilot-chargeback action provides the following testing infrastructure:
    node --version  # Should be 18+
    ```
 
-2. **Docker** (for act and mock API containerization)
+2. **Docker** (for mock API containerization)
 
    ```bash
    docker --version
    docker info  # Should show running Docker daemon
    ```
 
-3. **act CLI** (for local GitHub Actions testing)
-
-   ```bash
-   # macOS
-   brew install act
-
-   # Linux/WSL
-   curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
-
-   # Or download from: https://github.com/nektos/act/releases
-   ```
-
-4. **curl** (for API testing)
+3. **curl** (for API testing)
    ```bash
    curl --version
    ```
@@ -68,52 +54,6 @@ For integration testing, you'll need:
 - GitHub Personal Access Token with `org:read` and `team:read` permissions
 - Access to a test GitHub organization (recommended: `copilot-chargeback-test`)
 - Optional: Test teams within the organization
-
-## Local Testing with act
-
-### Quick Start
-
-1. **Install dependencies**:
-
-   ```bash
-   npm install
-   ```
-
-2. **Run basic local test**:
-   ```bash
-   ./test-infrastructure/scripts/test-local.sh --scenario basic
-   ```
-
-### Available Test Scenarios
-
-- `basic`: Standard team-to-cost-center sync
-- `org-only`: Organization-wide sync (no specific team)
-- `team-sync`: Team-specific sync with validation
-- `error-conditions`: Test error handling and recovery
-
-### Manual act Usage
-
-You can also run act directly:
-
-```bash
-# Basic test
-act --env-file .env.example --workflows .github/workflows/test-local.yml
-
-# Specific scenario
-act --env-file .env.test-org-only --job test-local-org-only
-
-# With verbose output
-act --verbose --env-file .env.test-team-sync
-```
-
-### Environment Configuration
-
-Use the provided environment templates:
-
-- `.env.example`: Basic configuration
-- `.env.test-org-only`: Organization-only sync testing
-- `.env.test-team-sync`: Team-specific sync testing
-- `.env.test-errors`: Error condition testing
 
 ## Integration Testing
 
@@ -212,8 +152,8 @@ Tests syncing a specific team to a cost center.
 **Setup**:
 
 ```bash
-cp .env.test-team-sync .env
-# Edit .env with your values
+cp .env.example .env
+# Edit .env with your values, including github_team
 ```
 
 **Expected behavior**:
@@ -230,8 +170,8 @@ Tests syncing all organization members.
 **Setup**:
 
 ```bash
-cp .env.test-org-only .env
-# Edit .env with your values
+cp .env.example .env
+# Edit .env with your values, omit github_team to sync entire org
 ```
 
 **Expected behavior**:
@@ -246,8 +186,8 @@ Tests error handling and recovery.
 **Setup**:
 
 ```bash
-cp .env.test-errors .env
-# Uses invalid tokens and endpoints
+cp .env.example .env
+# Use invalid tokens and endpoints to test error handling
 ```
 
 **Expected behavior**:
@@ -259,32 +199,6 @@ cp .env.test-errors .env
 ## Troubleshooting
 
 ### Common Issues
-
-#### Act Issues
-
-**Problem**: `act` command not found
-
-```bash
-# Solution: Install act
-brew install act  # macOS
-# or
-curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
-```
-
-**Problem**: Docker permission denied
-
-```bash
-# Solution: Add user to docker group (Linux)
-sudo usermod -aG docker $USER
-# Then logout and login again
-```
-
-**Problem**: Act uses wrong platform
-
-```bash
-# Solution: Specify platform explicitly
-act --platform ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest
-```
 
 #### GitHub API Issues
 
@@ -334,9 +248,6 @@ Enable verbose logging:
 
 # For integration testing
 ./test-infrastructure/scripts/test-integration.sh --verbose
-
-# For act directly
-act --verbose
 ```
 
 ### Cleanup
@@ -397,13 +308,13 @@ Create custom environment files for specific test cases:
 
 ```bash
 # Copy existing template
-cp .env.test-team-sync .env.custom-test
+cp .env.example .env.custom-test
 
 # Modify as needed
 vim .env.custom-test
 
-# Run with custom config
-act --env-file .env.custom-test
+# Run integration test with custom config
+./test-infrastructure/scripts/test-integration.sh
 ```
 
 ## Example Workflows
@@ -417,14 +328,6 @@ Run all test scenarios:
 set -e
 
 echo "Running full test suite..."
-
-# Test scenarios
-scenarios=("basic" "org-only" "team-sync" "error-conditions")
-
-for scenario in "${scenarios[@]}"; do
-  echo "Testing scenario: $scenario"
-  ./test-infrastructure/scripts/test-local.sh --scenario "$scenario"
-done
 
 echo "Running integration tests..."
 ./test-infrastructure/scripts/test-integration.sh --dry-run
@@ -443,7 +346,7 @@ Set up a watch script for development:
 while true; do
   echo "Running tests..."
   npm test
-  ./test-infrastructure/scripts/test-local.sh --scenario basic
+  ./test-infrastructure/scripts/test-integration.sh --dry-run
 
   echo "Waiting for changes..."
   sleep 30
@@ -455,7 +358,7 @@ done
 For issues and questions:
 
 1. Check the [troubleshooting section](#troubleshooting)
-2. Review the action logs with `--verbose` flag
+2. Review the action logs in CI/CD pipeline
 3. Check mock API health: `curl http://localhost:3001/health`
 4. Validate GitHub token:
    `curl -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/user`
@@ -467,4 +370,4 @@ When adding new test scenarios:
 1. Create appropriate environment files
 2. Update the test scripts
 3. Add documentation
-4. Test with both act and integration modes
+4. Test with integration modes
